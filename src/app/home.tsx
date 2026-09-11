@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,14 +12,23 @@ import {
 } from '@/constants/theme';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const handleSelectDate = (date: Date) => {
+    setSelectedDate(date);
+    router.push({
+      pathname: '/day-detailed',
+      params: { date: date.toISOString() },
+    });
+  };
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <DateStrip
           selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
+          onSelectDate={handleSelectDate}
         />
       </SafeAreaView>
     </ThemedView>

@@ -19,7 +19,7 @@ export default function LoginScreen() {
   async function signIn() {
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -41,6 +41,8 @@ export default function LoginScreen() {
       email,
       password,
     });
+
+    
 
     setLoading(false);
 

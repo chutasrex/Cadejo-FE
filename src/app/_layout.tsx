@@ -1,17 +1,34 @@
 import { Stack, Redirect, useSegments } from 'expo-router';
-import { useSession } from '@/hooks/useSession';
+import { useEffect } from 'react';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { configureApiAuthToken } from '@/lib/api-client';
+
 
 export default function RootLayout() {
-  const { session, loading } = useSession();
+  return (
+    <AuthProvider>
+      <RootLayoutContent />
+    </AuthProvider>
+  );
+}
+
+function RootLayoutContent() {
+  const { session, loading } = useAuth();
   const segments = useSegments();
 
-  if (loading) return null; // or a splash/loading screen
+
+  useEffect(() => {
+    configureApiAuthToken(() => session?.access_token ?? null);
+  }, [session]);
+  
+  if (loading) return null;
 
   const inLoginScreen = segments[0] === 'login';
 
   if (!session && !inLoginScreen) {
     return <Redirect href="/login" />;
   }
+
   if (session && inLoginScreen) {
     return <Redirect href="/" />;
   }
