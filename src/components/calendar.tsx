@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Dimensions, FlatList, Pressable, StyleSheet, View } from 'react-native';
-
+import { Night } from '@/types/sleep';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
@@ -12,14 +12,13 @@ const { height } = Dimensions.get('window');
 
 const STRIP_HEIGHT = height * 0.55;
 
-// Fit exactly VISIBLE_DAYS items (+ gaps) inside the available width.
 const ITEM_WIDTH =
-  (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - ITEM_GAP * (VISIBLE_DAYS - 1)) /
+  (SCREEN_WIDTH -
+    HORIZONTAL_PADDING * 2 -
+    ITEM_GAP * (VISIBLE_DAYS - 1)) /
   VISIBLE_DAYS;
 
-
-
-const RANGE_DAYS = 60; // how many days before/after today to render
+const RANGE_DAYS = 60;
 
 type DayItem = {
   date: Date;
@@ -36,27 +35,48 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 function generateDays(range: number): DayItem[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const days: DayItem[] = [];
+
   for (let i = -range; i <= range; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    days.push({ date: d, key: d.toISOString().split('T')[0] });
+
+    days.push({
+      date: d,
+      key: formatDateKey(d),
+    });
   }
+
   return days;
 }
 
 type DateStripProps = {
   selectedDate: Date;
+  nightStatus: Map<string, boolean>;
   onSelectDate: (date: Date) => void;
 };
 
-export function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
+export function DateStrip({
+  selectedDate,
+  onSelectDate,
+  nightStatus
+}: DateStripProps) {
   const listRef = useRef<FlatList<DayItem>>(null);
+
   const days = useMemo(() => generateDays(RANGE_DAYS), []);
+
   const todayIndex = useMemo(
     () => days.findIndex((d) => isSameDay(d.date, new Date())),
     [days]
@@ -96,37 +116,57 @@ export function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
     []
   );
 
-  const renderItem = useCallback(
-    ({ item }: { item: DayItem }) => {
-      const selected = isSameDay(item.date, selectedDate);
-      const today = isSameDay(item.date, new Date());
+const renderItem = useCallback(
+  ({ item }: { item: DayItem }) => {
+    const selected = isSameDay(item.date, selectedDate);
+    const today = isSameDay(item.date, new Date());
 
-      return (
-        <Pressable
-          onPress={() => onSelectDate(item.date)}
-          style={[styles.item, selected && styles.itemSelected]}
+    const empty = nightStatus.get(item.key);
+    const hasNight = nightStatus.has(item.key);
+
+    return (
+      <Pressable
+        onPress={() => onSelectDate(item.date)}
+        style={[styles.item, selected && styles.itemSelected]}
+      >
+        <ThemedText
+          type="small"
+          style={[
+            styles.dayLabel,
+            selected && styles.dayLabelSelected,
+          ]}
         >
-          <ThemedText
-            type="small"
-            style={[styles.dayLabel, selected && styles.dayLabelSelected]}
-          >
-            {DAY_LABELS[item.date.getDay()]}
-          </ThemedText>
-          <ThemedText
-            type="default"
+          {DAY_LABELS[item.date.getDay()]}
+        </ThemedText>
+
+        <ThemedText
+          type="default"
+          style={[
+            styles.dayNumber,
+            selected && styles.dayNumberSelected,
+            today && !selected && styles.dayNumberToday,
+          ]}
+        >
+          {item.date.getDate()}
+        </ThemedText>
+
+        {hasNight && (
+          <View
             style={[
-              styles.dayNumber,
-              selected && styles.dayNumberSelected,
-              today && !selected && styles.dayNumberToday,
+              styles.recordedIndicator,
+              empty === true && styles.emptyIndicator,
             ]}
           >
-            {item.date.getDate()}
-          </ThemedText>
-        </Pressable>
-      );
-    },
-    [selectedDate, onSelectDate]
-  );
+            <ThemedText style={styles.recordedCheck}>
+              {empty === true ? '-' : '✓'}
+            </ThemedText>
+          </View>
+        )}
+      </Pressable>
+    );
+  },
+  [selectedDate, onSelectDate, nightStatus]
+);
 
   return (
     <View style={styles.container}>
@@ -166,8 +206,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-
-    // Make each date visible against the black background
     backgroundColor: '#1A1A1A',
   },
 
@@ -197,5 +235,26 @@ const styles = StyleSheet.create({
 
   dayNumberToday: {
     color: '#6C5CE7',
+  },
+
+  recordedIndicator: {
+    position: 'absolute',
+    top: '25%',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  emptyIndicator: {
+    backgroundColor: '#FFC107',
+  },
+
+  recordedCheck: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

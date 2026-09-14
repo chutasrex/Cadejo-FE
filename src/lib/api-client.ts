@@ -2,10 +2,10 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 if (!API_BASE_URL) {
   console.warn('EXPO_PUBLIC_API_URL is not set — API calls will fail.');
+} else {
+  console.log(`Using API base URL: ${API_BASE_URL}`);
 }
 
-// Decoupled from any specific auth implementation. Call `configureApiAuthToken`
-// once from your auth provider/context whenever the token changes.
 let getToken: () => Promise<string | null> | string | null = () => null;
 
 export function configureApiAuthToken(getter: typeof getToken) {
@@ -22,12 +22,18 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
+  console.log('API request:', {
+    method: options.method ?? 'GET',
+    url: `${API_BASE_URL}${path}`,
+    hasToken: !!token,
+    body: options.body,
+  });
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { auth: token } : {}),
       ...options.headers,
     },
   });
@@ -41,9 +47,33 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return undefined as T;
   }
 
+  console.log('API response:', {
+    status: response.status,
+    body: await response.clone().text().catch(() => ''),
+  });
+
   return response.json();
 }
 
 export const apiClient = {
-  get: <T>(path: string) => request<T>(path, { method: 'GET' }),
+  get: <T>(path: string) =>
+    request<T>(path, { method: 'GET' }),
+
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'PUT',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  delete: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'DELETE',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
 };

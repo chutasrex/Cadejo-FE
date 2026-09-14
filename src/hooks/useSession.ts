@@ -1,37 +1,41 @@
-import { useEffect, useState } from 'react';
+// src/hooks/useSession.ts
+import { useEffect, useState, useCallback } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import type { Session } from '@supabase/supabase-js';
+import { configureApiAuthToken } from '@/lib/api-client';
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+
+    configureApiAuthToken(async () => {
+      const { data } = await supabase.auth.getSession();
+      return data.session?.access_token ?? null;
+    });
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
-
-      console.log('ACCESS TOKEN:', data.session?.access_token);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-
-      console.log('AUTH EVENT:', _event);
-      console.log('ACCESS TOKEN:', session?.access_token);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
   }, []);
 
   return {
     session,
     user: session?.user ?? null,
-    accessToken: session?.access_token ?? null,
     loading,
+    isAuthenticated: !!session,
+    signOut,
   };
 }

@@ -35,5 +35,6 @@ export interface Night {
   user_id: string | null;
   date: string; // YYYY-MM-DD
   created_at: string;
+  empty: boolean
   sleep: Sleep | null;
 }

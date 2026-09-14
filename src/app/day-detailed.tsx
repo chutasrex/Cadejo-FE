@@ -7,8 +7,9 @@ import { SleepTimeline } from '@/components/sleep-timeline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useNightByDate } from '@/hooks/use-night-by-date';
+import { useNights } from '@/hooks/use-night';
 import { QualityOfSleep } from '@/types/sleep';
+import { useMemo } from 'react';
 
 function formatFullDate(date: Date) {
   return date.toLocaleDateString(undefined, {
@@ -37,7 +38,12 @@ export default function DayDetailedScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
   const parsedDate = date ? new Date(date) : new Date();
 
-  const { data: night, isLoading, isError, error } = useNightByDate(parsedDate);
+  const { data: nights, isLoading, isError, error } = useNights();
+
+  const night = useMemo(
+    () => nights?.find((night) => night.date === date),
+    [nights, date],
+  )
 
   return (
     <ThemedView style={styles.container}>
