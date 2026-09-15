@@ -1,15 +1,21 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
+import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SleepStats } from '@/components/sleep-stats';
 import { SleepTimeline } from '@/components/sleep-timeline';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useNights } from '@/hooks/use-night';
-import { QualityOfSleep } from '@/types/sleep';
-import { useMemo } from 'react';
+import { View } from 'react-native';
+
+import {
+  BottomTabInset,
+  MaxContentWidth,
+  Spacing,
+} from '@/constants/theme';
+import { useNights, useSleep } from '@/hooks/use-night';
+import { SleepQualityBadge } from '@/components/sleep-quality-badge';
 
 function formatFullDate(date: Date) {
   return date.toLocaleDateString(undefined, {
@@ -19,85 +25,121 @@ function formatFullDate(date: Date) {
   });
 }
 
-function formatTotalDuration(seconds: number) {
-  const totalMinutes = Math.round(seconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${hours}h ${minutes}m`;
-}
-
-const QUALITY_COLORS: Record<QualityOfSleep, string> = {
-  [QualityOfSleep.POOR]: '#E57373',
-  [QualityOfSleep.FAIR]: '#FFB74D',
-  [QualityOfSleep.GOOD]: '#81C784',
-  [QualityOfSleep.EXCELLENT]: '#4CAF50',
-};
-
 export default function DayDetailedScreen() {
   const router = useRouter();
   const { date } = useLocalSearchParams<{ date: string }>();
+
   const parsedDate = date ? new Date(date) : new Date();
 
-  const { data: nights, isLoading, isError, error } = useNights();
+  const {
+    data: nights,
+    isLoading: nightsLoading,
+    isError: nightsError,
+    error: nightsErrorData,
+  } = useNights();
 
   const night = useMemo(
     () => nights?.find((night) => night.date === date),
     [nights, date],
-  )
+  );
+
+  const {
+    data: sleep,
+    isLoading: sleepLoading,
+    isError: sleepError,
+    error: sleepErrorData,
+  } = useSleep(night?.id, night != null && !night.empty);
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <ThemedText type="default">← Back</ThemedText>
         </Pressable>
 
-        <ThemedText type="title" style={styles.dateLabel}>
-          {formatFullDate(parsedDate)}
-        </ThemedText>
+        <View style={styles.dateRow}>
+          <ThemedText type="title" style={styles.dateLabel}>
+            {formatFullDate(parsedDate)}
+          </ThemedText>
 
-        {isLoading && <ThemedText type="default">Loading…</ThemedText>}
+          {sleep?.quality_of_sleep && (
+            <SleepQualityBadge quality={sleep.quality_of_sleep} />
+          )}
+        </View>
 
-        {isError && (
-          <ThemedText type="default" style={styles.errorText}>
-            Couldn't load this night: {(error as Error)?.message ?? 'unknown error'}
+        {night && night.empty && (
+          <Pressable
+            style={styles.startButton}
+            onPress={() =>
+              router.push({
+                pathname: '/recording-sleep',
+                params: {
+                  nightId: String(night.id),
+                },
+              })
+            }
+          >
+            <ThemedText style={styles.startButtonText}>
+              Start Recording Sleep
+            </ThemedText>
+          </Pressable>
+        )}
+
+        {nightsLoading && (
+          <ThemedText type="default">
+            Loading…
           </ThemedText>
         )}
 
-        {!isLoading && !isError && !night?.sleep && (
+        {nightsError && (
+          <ThemedText type="default" style={styles.errorText}>
+            Couldn't load this night:{' '}
+            {(nightsErrorData as Error)?.message ?? 'unknown error'}
+          </ThemedText>
+        )}
+
+        {!nightsLoading && !nightsError && !night && (
+          <ThemedText type="default" style={styles.placeholder}>
+            No night logged for this date.
+          </ThemedText>
+        )}
+
+        {night?.empty && (
           <ThemedText type="default" style={styles.placeholder}>
             No sleep logged for this night.
           </ThemedText>
         )}
 
-        {night?.sleep && (
-          <>
-            <View style={styles.header}>
-              {night.sleep.quality_of_sleep && (
-                <View
-                  style={[
-                    styles.qualityBadge,
-                    { backgroundColor: QUALITY_COLORS[night.sleep.quality_of_sleep] },
-                  ]}
-                >
-                  <ThemedText type="small" style={styles.qualityText}>
-                    {night.sleep.quality_of_sleep}
-                  </ThemedText>
-                </View>
-              )}
-              {night.sleep.duration != null && (
-                <ThemedText type="small" style={styles.durationLabel}>
-                  {formatTotalDuration(night.sleep.duration)} total
-                </ThemedText>
-              )}
-            </View>
+        {sleepLoading && (
+          <ThemedText type="default">
+            Loading sleep data…
+          </ThemedText>
+        )}
 
-            <ThemedView type="backgroundElement" style={styles.timelineCard}>
-              <SleepTimeline segments={night.sleep.sleep_segments} />
+        {sleepError && (
+          <ThemedText type="default" style={styles.errorText}>
+            Couldn't load sleep data:{' '}
+            {(sleepErrorData as Error)?.message ?? 'unknown error'}
+          </ThemedText>
+        )}
+
+        {sleep && (
+          <>
+            <ThemedView
+              type="backgroundElement"
+              style={styles.timelineCard}
+            >
+              <SleepTimeline segments={sleep.sleep_segments} />
             </ThemedView>
 
-            <ThemedView type="backgroundElement" style={styles.statsCard}>
-              <SleepStats segments={night.sleep.sleep_segments} />
+            <ThemedView
+              type="backgroundElement"
+              style={styles.statsCard}
+            >
+              <SleepStats segments={sleep.sleep_segments} />
             </ThemedView>
           </>
         )}
@@ -107,7 +149,22 @@ export default function DayDetailedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
+  container: {
+    flex: 1,
+  },
+
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.three,
+  },
+
+  dateLabel: {
+    fontSize: 24, 
+    lineHeight: 28,
+    flexShrink: 1,
+  },
+
   safeArea: {
     flex: 1,
     gap: Spacing.four,
@@ -116,14 +173,40 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'stretch',
   },
-  backButton: { paddingVertical: Spacing.two ?? 8 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  dateLabel: { fontSize: 24 },
-  qualityBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  qualityText: { color: '#fff', fontWeight: '600' },
-  durationLabel: { opacity: 0.6 },
-  placeholder: { opacity: 0.6 },
-  errorText: { color: '#E57373' },
-  timelineCard: { padding: Spacing.four, borderRadius: Spacing.four },
-  statsCard: { padding: Spacing.four, borderRadius: Spacing.four, gap: Spacing.three },
+
+  backButton: {
+    paddingVertical: Spacing.two ?? 8,
+  },
+
+  placeholder: {
+    opacity: 0.6,
+  },
+
+  errorText: {
+    color: '#E57373',
+  },
+
+  timelineCard: {
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+  },
+
+  statsCard: {
+    padding: Spacing.four,
+    borderRadius: Spacing.four,
+    gap: Spacing.three,
+  },
+
+  startButton: {
+  backgroundColor: '#6C5CE7',
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  borderRadius: 24,
+  alignItems: 'center',
+},
+
+startButtonText: {
+  color: '#FFFFFF',
+  fontWeight: '600',
+},
 });

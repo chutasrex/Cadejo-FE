@@ -1,6 +1,6 @@
 export enum QualityOfSleep {
   POOR = 'POOR',
-  FAIR = 'FAIR',
+  MID = 'MID',
   GOOD = 'GOOD',
   EXCELLENT = 'EXCELLENT',
 }
@@ -17,6 +17,8 @@ export interface SleepSegment {
   idx: number | null;
   sleep_stage: SleepStage | null;
   duration: number | null;
+  starts_at: string;
+  ends_at: string;
   created_at: string;
 }
 

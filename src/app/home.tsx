@@ -24,10 +24,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const { nightStatus } = useNights();
+  const { nightStatus, createNight } = useNights();
 
   const handleSelectDate = (date: Date) => {
     const dateKey = formatDateKey(date);
+
+    if (!nightStatus.has(dateKey)) {
+      createNight.mutate(dateKey);
+    }
 
     setSelectedDate(date);
 
