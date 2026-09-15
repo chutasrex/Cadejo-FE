@@ -10,7 +10,7 @@ const HORIZONTAL_PADDING = Spacing.four;
 const LABEL_WIDTH = 56;
 
 const ROW_HEIGHT = 64;
-const LINE_THICKNESS = 8;
+const LINE_THICKNESS = 4;
 
 const TOP_PADDING = 20;
 const BOTTOM_PADDING = 36;

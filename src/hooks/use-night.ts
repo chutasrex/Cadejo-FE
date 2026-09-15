@@ -50,3 +50,14 @@ export function useSleep(
     enabled: nightId !== undefined && enabled,
   });
 }
+
+export function useEvent(
+  nightId: number | undefined,
+) {
+  return useQuery({
+    queryKey: ['event', nightId],
+    queryFn: () =>
+      apiClient.get<Sleep>(`/user/nights/${nightId}/events`),
+    enabled: nightId !== undefined,
+  });
+}
