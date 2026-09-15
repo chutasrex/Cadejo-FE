@@ -22,12 +22,6 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
-  console.log('API request:', {
-    method: options.method ?? 'GET',
-    url: `${API_BASE_URL}${path}`,
-    hasToken: !!token,
-    body: options.body,
-  });
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -46,11 +40,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
   }
-
-  console.log('API response:', {
-    status: response.status,
-    body: await response.clone().text().catch(() => ''),
-  });
 
   return response.json();
 }

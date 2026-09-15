@@ -94,6 +94,8 @@ export function SleepTimeline({
     [segments]
   );
 
+  console.log('ordered segments:', ordered);
+
   const timeline = useMemo(() => {
     if (!ordered.length) {
       return null;
@@ -113,6 +115,8 @@ export function SleepTimeline({
       duration: end - start,
     };
   }, [ordered]);
+
+  print()
 
   /*
    * Don't render the SVG until React Native has measured
@@ -294,33 +298,46 @@ function TimelineSvg({
     }
   );
 
-  /*
-   * Every segment start, plus the final segment end.
-   */
-  const timeMarkers = [
-    ...segments.map((segment) => {
-      const timestamp = new Date(
-        segment.starts_at!
-      ).getTime();
+  const ordered = useMemo(
+  () =>
+      [...segments]
+        .filter(
+          (segment) =>
+            segment.starts_at != null &&
+            segment.ends_at != null &&
+            segment.sleep_stage != null
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.starts_at!).getTime() -
+            new Date(b.starts_at!).getTime()
+        ),
+    [segments]
+  );
 
-      return {
-        x: xForTime(timestamp),
-        timestamp,
-        label: formatTime(segment.starts_at!),
-      };
-    }),
 
+
+const timeMarkers = [
+    {
+      x: xForTime(
+        new Date(ordered[0].starts_at!).getTime()
+      ),
+      timestamp: new Date(
+        ordered[0].starts_at!
+      ).getTime(),
+      label: formatTime(ordered[0].starts_at!),
+    },
     {
       x: xForTime(
         new Date(
-          segments[segments.length - 1].ends_at!
+          ordered[ordered.length - 1].ends_at!
         ).getTime()
       ),
       timestamp: new Date(
-        segments[segments.length - 1].ends_at!
+        ordered[ordered.length - 1].ends_at!
       ).getTime(),
       label: formatTime(
-        segments[segments.length - 1].ends_at!
+        ordered[ordered.length - 1].ends_at!
       ),
     },
   ];
