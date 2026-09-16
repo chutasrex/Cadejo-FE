@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SleepStats } from '@/components/sleep-stats';
@@ -16,6 +16,7 @@ import {
 } from '@/constants/theme';
 import { useNights, useSleep } from '@/hooks/use-night';
 import { SleepQualityBadge } from '@/components/sleep-quality-badge';
+import { NightEvents } from '@/components/night-events';
 
 function formatFullDate(date: Date) {
   return date.toLocaleDateString(undefined, {
@@ -50,26 +51,34 @@ export default function DayDetailedScreen() {
     error: sleepErrorData,
   } = useSleep(night?.id, night != null && !night.empty);
 
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ThemedText type="default">← Back</ThemedText>
-        </Pressable>
+return (
+  <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
 
-        <View style={styles.dateRow}>
-          <ThemedText type="title" style={styles.dateLabel}>
-            {formatFullDate(parsedDate)}
-          </ThemedText>
+      {/* Fixed header */}
+      <Pressable
+        onPress={() => router.back()}
+        style={styles.backButton}
+      >
+        <ThemedText type="default">← Back</ThemedText>
+      </Pressable>
 
-          {sleep?.quality_of_sleep && (
-            <SleepQualityBadge quality={sleep.quality_of_sleep} />
-          )}
-        </View>
+      <View style={styles.dateRow}>
+        <ThemedText type="title" style={styles.dateLabel}>
+          {formatFullDate(parsedDate)}
+        </ThemedText>
 
+        {sleep?.quality_of_sleep && (
+          <SleepQualityBadge quality={sleep.quality_of_sleep} />
+        )}
+      </View>
+
+      {/* Scrollable content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {night && night.empty && (
           <Pressable
             style={styles.startButton}
@@ -143,9 +152,14 @@ export default function DayDetailedScreen() {
             </ThemedView>
           </>
         )}
-      </SafeAreaView>
-    </ThemedView>
-  );
+
+        {night && !night.empty && (
+          <NightEvents nightId={night.id} />
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  </ThemedView>
+);
 }
 
 const styles = StyleSheet.create({
@@ -153,60 +167,74 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.three,
-  },
-
-  dateLabel: {
-    fontSize: 24, 
-    lineHeight: 28,
-    flexShrink: 1,
-  },
-
   safeArea: {
     flex: 1,
-    gap: Spacing.four,
     paddingHorizontal: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.three,
+    paddingTop: Spacing.two,
     maxWidth: MaxContentWidth,
     alignSelf: 'stretch',
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.two,
   },
 
   backButton: {
     paddingVertical: Spacing.two ?? 8,
   },
 
-  placeholder: {
-    opacity: 0.6,
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.four,
   },
 
-  errorText: {
-    color: '#E57373',
+  dateLabel: {
+    fontSize: 24,
+    lineHeight: 28,
+    flexShrink: 1,
   },
 
   timelineCard: {
     padding: Spacing.four,
     borderRadius: Spacing.four,
+    marginBottom: Spacing.four,
   },
 
   statsCard: {
     padding: Spacing.four,
     borderRadius: Spacing.four,
     gap: Spacing.three,
+    marginBottom: Spacing.four,
   },
 
   startButton: {
-  backgroundColor: '#6C5CE7',
-  paddingVertical: 14,
-  paddingHorizontal: 20,
-  borderRadius: 24,
-  alignItems: 'center',
-},
+    backgroundColor: '#6C5CE7',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    alignItems: 'center',
+    marginBottom: Spacing.four,
+  },
 
-startButtonText: {
-  color: '#FFFFFF',
-  fontWeight: '600',
-},
+  startButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+
+  placeholder: {
+    opacity: 0.6,
+    marginBottom: Spacing.four,
+  },
+
+  errorText: {
+    color: '#E57373',
+    marginBottom: Spacing.four,
+  },
 });

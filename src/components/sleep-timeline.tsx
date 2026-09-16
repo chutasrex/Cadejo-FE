@@ -69,12 +69,7 @@ function formatTime(value: string | Date) {
 export function SleepTimeline({
   segments,
 }: SleepTimelineProps) {
-  /*
-   * IMPORTANT:
-   *
-   * We don't calculate the chart width from Dimensions.
-   * The chart needs to know its ACTUAL rendered width.
-   */
+
   const [chartWidth, setChartWidth] = useState(0);
 
   const ordered = useMemo(
@@ -93,8 +88,6 @@ export function SleepTimeline({
         ),
     [segments]
   );
-
-  console.log('ordered segments:', ordered);
 
   const timeline = useMemo(() => {
     if (!ordered.length) {
@@ -116,12 +109,6 @@ export function SleepTimeline({
     };
   }, [ordered]);
 
-  print()
-
-  /*
-   * Don't render the SVG until React Native has measured
-   * the actual available width.
-   */
   if (!ordered.length) {
     return null;
   }
@@ -135,7 +122,6 @@ export function SleepTimeline({
         },
       ]}
     >
-      {/* Labels */}
       <View style={styles.labelColumn}>
         {STAGE_ORDER.map((stage) => (
           <View
@@ -154,7 +140,6 @@ export function SleepTimeline({
         <View style={styles.timeSpacer} />
       </View>
 
-      {/* Actual chart width */}
       <View
         style={styles.chartContainer}
         onLayout={(event) => {
@@ -191,18 +176,7 @@ function TimelineSvg({
   timeline,
   chartWidth,
 }: TimelineSvgProps) {
-  /*
-   * Keep the center of the rounded line caps away from
-   * the SVG edge.
-   *
-   * With an 8px line:
-   *
-   *   |---- 8px ----|
-   *   ^             ^
-   *   cap           cap
-   *
-   * Each cap extends 4px beyond its coordinate.
-   */
+
   const inset = LINE_THICKNESS / 2;
 
   const plotLeft = inset;
@@ -218,17 +192,12 @@ function TimelineSvg({
       (timestamp - timeline.start) /
       timeline.duration;
 
-    /*
-     * Clamp the normalized value FIRST.
-     */
+
     const clampedProgress = Math.max(
       0,
       Math.min(1, progress)
     );
 
-    /*
-     * Then map it into the inset plot area.
-     */
     return (
       plotLeft +
       clampedProgress * plotWidth
@@ -276,9 +245,6 @@ function TimelineSvg({
     };
   });
 
-  /*
-   * Only create transitions when the actual stage changes.
-   */
   const transitions = bars.slice(1).flatMap(
     (bar, index) => {
       const previous = bars[index];
@@ -411,7 +377,6 @@ const timeMarkers = [
         ))}
       </Svg>
 
-      {/* X-axis timestamps */}
       <View
         style={[
           styles.timeLabels,
@@ -421,10 +386,7 @@ const timeMarkers = [
         {timeMarkers.map((marker, index) => {
           const labelWidth = 44;
 
-          /*
-           * Clamp the TEXT independently so that the
-           * label can't overflow either side.
-           */
+
           const left = Math.max(
             0,
             Math.min(
