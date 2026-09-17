@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
-import { Night,Sleep } from '@/types/sleep';
+import { Night,Sleep,SleepEvent } from '@/types/sleep';
 
 export function useNights() {
   const queryClient = useQueryClient();
@@ -43,11 +43,19 @@ export function useSleep(
   nightId: number | undefined,
   enabled = true,
 ) {
+  
   return useQuery<Sleep>({
     queryKey: ['sleep', nightId],
     queryFn: () =>
       apiClient.get<Sleep>(`/user/nights/${nightId}/sleep`),
     enabled: nightId !== undefined && enabled,
+  });
+}
+
+export function useSubmitSleep(nightId: number | undefined) {
+  return useMutation<Sleep, Error, SleepEvent[]>({
+    mutationFn: (events) =>
+      apiClient.post(`/user/nights/${nightId}/sleep`, events), // send the array itself, not { events }
   });
 }
 

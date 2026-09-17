@@ -40,3 +40,11 @@ export interface Night {
   empty: boolean
   sleep: Sleep | null;
 }
+
+export interface SleepEvent {
+  idx: number;
+  x: number;
+  y:number;
+  z:number;
+  timestamp: string;
+}

@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { DateStrip } from '@/components/calendar';
 import { ThemedView } from '@/components/themed-view';
@@ -11,6 +12,11 @@ import {
   Spacing,
 } from '@/constants/theme';
 import { useNights } from '@/hooks/use-night';
+import { UserPreferencesModal } from '@/components/setting-user';
+import {
+  createUserPreferences,
+  getCurrentUser,
+} from '@/hooks/use-user';
 
 function formatDateKey(date: Date): string {
   const year = date.getFullYear();
@@ -23,8 +29,27 @@ function formatDateKey(date: Date): string {
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   const { nightStatus, createNight } = useNights();
+
+  const { error: userError } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: getCurrentUser,
+  });
+
+  const createPreferences = useMutation({
+    mutationFn: createUserPreferences,
+    onSuccess: () => {
+      setShowPreferencesModal(false);
+    },
+  });
+
+  useEffect(() => {
+    if (userError?.status === 404) {
+      setShowPreferencesModal(true);
+    }
+  }, [userError]);
 
   const handleSelectDate = (date: Date) => {
     const dateKey = formatDateKey(date);
@@ -45,6 +70,13 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <UserPreferencesModal
+        visible={showPreferencesModal}
+        onSubmit={createPreferences.mutate}
+        isSubmitting={createPreferences.isPending}
+        errorMessage={createPreferences.error?.message}
+      />
+
       <SafeAreaView style={styles.safeArea}>
         <DateStrip
           selectedDate={selectedDate}

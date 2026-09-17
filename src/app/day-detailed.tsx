@@ -79,6 +79,12 @@ return (
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {night?.empty && (
+          <ThemedText type="default" style={styles.placeholder}>
+            No sleep logged for this night.
+          </ThemedText>
+        )}
+        
         {night && night.empty && (
           <Pressable
             style={styles.startButton}
@@ -113,12 +119,6 @@ return (
         {!nightsLoading && !nightsError && !night && (
           <ThemedText type="default" style={styles.placeholder}>
             No night logged for this date.
-          </ThemedText>
-        )}
-
-        {night?.empty && (
-          <ThemedText type="default" style={styles.placeholder}>
-            No sleep logged for this night.
           </ThemedText>
         )}
 
